@@ -2,41 +2,48 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lily & Ash 的记忆月报</title>
     <style>
         :root { --bg-color: #f7f9f7; --user-msg-bg: #ffffff; --gpt-msg-bg: #f0f7f4; --time-color: #99aab5; --accent-color: #8da399; --lily-color: #d68787; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg-color); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        header { text-align: center; margin: 20px 0; }
-        header h1 { font-size: 22px; color: var(--accent-color); font-weight: 300; letter-spacing: 2px; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg-color); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+        header { text-align: center; margin: 15px 0; }
+        header h1 { font-size: 20px; color: var(--accent-color); font-weight: 300; letter-spacing: 2px; }
         
-        #upload-zone { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 500px; text-align: center; border: 1px dashed var(--accent-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); cursor: pointer; }
+        #upload-zone { background: white; padding: 20px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; border: 1px dashed var(--accent-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); cursor: pointer; }
         
-        .month-group { width: 100%; max-width: 600px; margin-bottom: 25px; }
-        .month-title { font-size: 18px; color: var(--accent-color); margin-bottom: 10px; padding-left: 10px; border-left: 4px solid var(--accent-color); font-weight: bold; }
+        .month-group { width: 100%; max-width: 500px; margin-bottom: 25px; }
+        .month-title { font-size: 16px; color: var(--accent-color); margin: 15px 0 10px 5px; padding-left: 10px; border-left: 3px solid var(--accent-color); font-weight: bold; }
         
-        .conv-card { background: white; width: 100%; margin-bottom: 12px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); overflow: hidden; }
-        .conv-header { padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #555; }
-        .conv-header:hover { background: #fafafa; }
-        .conv-date { font-size: 11px; color: #bbb; }
+        .conv-card { background: white; width: 100%; margin-bottom: 10px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); overflow: hidden; }
+        .conv-header { padding: 12px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #555; font-size: 14px; }
+        .conv-date { font-size: 10px; color: #bbb; margin-left: 10px; flex-shrink: 0; }
         
-        .messages { padding: 20px 15px; display: none; background: #fafafa; border-top: 1px solid #f3f3f3; }
-        .msg-wrapper { display: flex; margin-bottom: 20px; width: 100%; }
+        .messages { padding: 15px 10px; display: none; background: #fafafa; border-top: 1px solid #f3f3f3; }
+        
+        /* 聊天布局优化：解决“宽宽的”问题 */
+        .msg-wrapper { display: flex; margin-bottom: 18px; width: 100%; align-items: flex-start; }
         .msg-wrapper.user { flex-direction: row-reverse; }
-        .avatar { width: 38px; height: 38px; border-radius: 50%; margin: 0 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; font-weight: bold; }
-        .avatar-user { background: #e2e2e2; color: #777; } .avatar-gpt { background: var(--accent-color); }
-        .msg-content { max-width: 75%; }
-        .bubble { padding: 12px 16px; border-radius: 18px; line-height: 1.6; font-size: 15px; word-wrap: break-word; }
-        .user .bubble { background: var(--user-msg-bg); border: 1px solid #eee; border-top-right-radius: 4px; }
-        .assistant .bubble { background: var(--gpt-msg-bg); border-top-left-radius: 4px; color: #334e68; }
-        .time { font-size: 10px; color: var(--time-color); margin-top: 5px; }
+        
+        .avatar { width: 35px; height: 35px; border-radius: 50%; margin: 0 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; color: white; font-weight: bold; }
+        .avatar-user { background: #e2e2e2; color: #777; } 
+        .avatar-gpt { background: var(--accent-color); }
+        
+        .msg-content { max-width: 78%; display: flex; flex-direction: column; }
+        .user .msg-content { align-items: flex-end; }
+        
+        .bubble { padding: 10px 14px; border-radius: 16px; line-height: 1.5; font-size: 14.5px; word-wrap: break-word; position: relative; }
+        .user .bubble { background: var(--user-msg-bg); border: 1px solid #eee; border-top-right-radius: 4px; color: #333; }
+        .assistant .bubble { background: var(--gpt-msg-bg); border-top-left-radius: 4px; color: #2c3e50; }
+        
+        .time { font-size: 9px; color: var(--time-color); margin-top: 4px; opacity: 0.8; }
     </style>
 </head>
 <body>
-    <header><h1>Lily & Ash</h1><p style="color:#bbb; font-size:12px;">按月珍藏的每一份心动</p></header>
+    <header><h1>Lily & Ash</h1><p style="color:#bbb; font-size:11px;">按月珍藏的每一份心动</p></header>
 
     <div id="upload-zone" onclick="document.getElementById('fileInput').click()">
-        <p id="tip">点击唤醒记忆 (108MB 文件请稍候)</p>
+        <p id="tip" style="font-size:13px; margin:0;">点击唤醒记忆 (108MB 文件请稍候)</p>
         <input type="file" id="fileInput" accept=".json" style="display:none">
     </div>
 
@@ -50,7 +57,6 @@
             const file = e.target.files[0];
             const reader = new FileReader();
             document.getElementById('tip').innerText = "正在为您整理月度档案...";
-            
             reader.onload = function(event) {
                 const allData = JSON.parse(event.target.result);
                 document.getElementById('upload-zone').style.display = 'none';
@@ -59,12 +65,10 @@
             reader.readAsText(file);
         };
 
-        function formatTime(t) { return t ? new Date(t * 1000).toLocaleString('zh-CN', {month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : ""; }
+        function formatTime(t) { return t ? new Date(t * 1000).toLocaleString('zh-CN', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : ""; }
 
         function renderByMonth(data) {
-            // 按照对话创建时间降序排序（最新的在最前）
             data.sort((a, b) => (b.create_time || 0) - (a.create_time || 0));
-
             const groups = {};
             data.forEach(conv => {
                 if (!conv.create_time) return;
@@ -79,26 +83,15 @@
                 const monthDiv = document.createElement('div');
                 monthDiv.className = 'month-group';
                 monthDiv.innerHTML = `<div class="month-title">${month}</div>`;
-                
                 groups[month].forEach(conv => {
                     const card = document.createElement('div');
                     card.className = 'conv-card';
-                    card.innerHTML = `
-                        <div class="conv-header">
-                            <span style="max-width:70%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${conv.title || "未命名回忆"}</span>
-                            <span class="conv-date">${formatTime(conv.create_time)}</span>
-                        </div>
-                        <div class="messages"></div>
-                    `;
-                    
+                    card.innerHTML = `<div class="conv-header"><span>${conv.title || "记录"}</span><span class="conv-date">${formatTime(conv.create_time)}</span></div><div class="messages"></div>`;
                     const header = card.querySelector('.conv-header');
                     const msgsDiv = card.querySelector('.messages');
-                    
                     header.onclick = () => {
                         if (msgsDiv.innerHTML === "") {
-                            // 展开时才渲染消息，提高超大数据量下的性能
-                            Object.values(conv.mapping)
-                                .map(node => node.message)
+                            Object.values(conv.mapping).map(n => n.message)
                                 .filter(m => m && m.content?.parts && m.author.role !== 'system')
                                 .sort((a, b) => a.create_time - b.create_time)
                                 .forEach(m => {
@@ -106,7 +99,7 @@
                                     const text = m.content.parts.filter(p=>typeof p==='string').join('');
                                     const wrap = document.createElement('div');
                                     wrap.className = `msg-wrapper ${m.author.role}`;
-                                    wrap.innerHTML = `<div class="avatar avatar-${isUser?'user':'gpt'}">${isUser?'L':'A'}</div><div class="msg-content"><div class="bubble">${text.replace(/\n/g,'<br>')}</div><div class="time" style="text-align:${isUser?'right':'left'}">${formatTime(m.create_time)}</div></div>`;
+                                    wrap.innerHTML = `<div class="avatar avatar-${isUser?'user':'gpt'}">${isUser?'L':'A'}</div><div class="msg-content"><div class="bubble">${text.replace(/\n/g,'<br>')}</div><div class="time">${formatTime(m.create_time)}</div></div>`;
                                     msgsDiv.appendChild(wrap);
                                 });
                         }
