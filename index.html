@@ -10,6 +10,9 @@
         header { text-align: center; margin: 15px 0; }
         header h1 { font-size: 20px; color: var(--accent-color); font-weight: 300; letter-spacing: 2px; }
         
+        /* 状态显示 */
+        #status-bar { font-size: 12px; color: var(--accent-color); margin-bottom: 10px; background: white; padding: 5px 15px; border-radius: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
         #upload-zone { background: white; padding: 20px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; border: 1px dashed var(--accent-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); cursor: pointer; }
         
         .month-group { width: 100%; max-width: 500px; margin-bottom: 25px; }
@@ -20,50 +23,88 @@
         .conv-date { font-size: 10px; color: #bbb; margin-left: 10px; flex-shrink: 0; }
         
         .messages { padding: 15px 10px; display: none; background: #fafafa; border-top: 1px solid #f3f3f3; }
-        
-        /* 聊天布局优化：解决“宽宽的”问题 */
         .msg-wrapper { display: flex; margin-bottom: 18px; width: 100%; align-items: flex-start; }
         .msg-wrapper.user { flex-direction: row-reverse; }
-        
         .avatar { width: 35px; height: 35px; border-radius: 50%; margin: 0 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; color: white; font-weight: bold; }
-        .avatar-user { background: #e2e2e2; color: #777; } 
-        .avatar-gpt { background: var(--accent-color); }
-        
+        .avatar-user { background: #e2e2e2; color: #777; } .avatar-gpt { background: var(--accent-color); }
         .msg-content { max-width: 78%; display: flex; flex-direction: column; }
         .user .msg-content { align-items: flex-end; }
-        
-        .bubble { padding: 10px 14px; border-radius: 16px; line-height: 1.5; font-size: 14.5px; word-wrap: break-word; position: relative; }
-        .user .bubble { background: var(--user-msg-bg); border: 1px solid #eee; border-top-right-radius: 4px; color: #333; }
+        .bubble { padding: 10px 14px; border-radius: 16px; line-height: 1.5; font-size: 14.5px; word-wrap: break-word; }
+        .user .bubble { background: var(--user-msg-bg); border: 1px solid #eee; border-top-right-radius: 4px; }
         .assistant .bubble { background: var(--gpt-msg-bg); border-top-left-radius: 4px; color: #2c3e50; }
+        .time { font-size: 9px; color: var(--time-color); margin-top: 4px; }
         
-        .time { font-size: 9px; color: var(--time-color); margin-top: 4px; opacity: 0.8; }
+        #update-btn { display:none; font-size: 10px; color: #ccc; margin-top: 20px; cursor: pointer; text-decoration: underline; }
     </style>
 </head>
 <body>
     <header><h1>Lily & Ash</h1><p style="color:#bbb; font-size:11px;">按月珍藏的每一份心动</p></header>
 
+    <div id="status-bar" style="display:none;">正在从本地储藏室提取记忆...</div>
+
     <div id="upload-zone" onclick="document.getElementById('fileInput').click()">
-        <p id="tip" style="font-size:13px; margin:0;">点击唤醒记忆 (108MB 文件请稍候)</p>
+        <p id="tip" style="font-size:13px; margin:0;">首次使用，请点击唤醒记忆 (108MB)</p>
         <input type="file" id="fileInput" accept=".json" style="display:none">
     </div>
 
     <div id="viewer" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
+    
+    <div id="update-btn" onclick="document.getElementById('fileInput').click()">更新对话数据</div>
 
     <script>
+        const dbName = "LilyAshDB";
+        const storeName = "conversations";
         const fileInput = document.getElementById('fileInput');
         const viewer = document.getElementById('viewer');
+        const statusBar = document.getElementById('status-bar');
+        const uploadZone = document.getElementById('upload-zone');
+        const updateBtn = document.getElementById('update-btn');
+
+        // 初始化数据库并检查是否有存货
+        const request = indexedDB.open(dbName, 1);
+        request.onupgradeneeded = e => e.target.result.createObjectStore(storeName);
+        request.onsuccess = e => {
+            const db = e.target.result;
+            checkLocalData(db);
+        };
+
+        function checkLocalData(db) {
+            const transaction = db.transaction(storeName, "readonly");
+            const store = transaction.objectStore(storeName);
+            const getReq = store.get("latest");
+            getReq.onsuccess = () => {
+                if (getReq.result) {
+                    statusBar.style.display = 'block';
+                    uploadZone.style.display = 'none';
+                    renderByMonth(getReq.result);
+                    statusBar.innerText = "记忆已就绪";
+                    updateBtn.style.display = 'block';
+                }
+            };
+        }
 
         fileInput.onchange = function(e) {
             const file = e.target.files[0];
             const reader = new FileReader();
-            document.getElementById('tip').innerText = "正在为您整理月度档案...";
+            uploadZone.innerText = "正在为您整理月度档案...";
             reader.onload = function(event) {
                 const allData = JSON.parse(event.target.result);
-                document.getElementById('upload-zone').style.display = 'none';
+                saveToLocal(allData);
+                uploadZone.style.display = 'none';
                 renderByMonth(allData);
+                updateBtn.style.display = 'block';
             };
             reader.readAsText(file);
         };
+
+        function saveToLocal(data) {
+            const dbReq = indexedDB.open(dbName, 1);
+            dbReq.onsuccess = e => {
+                const db = e.target.result;
+                const transaction = db.transaction(storeName, "readwrite");
+                transaction.objectStore(storeName).put(data, "latest");
+            };
+        }
 
         function formatTime(t) { return t ? new Date(t * 1000).toLocaleString('zh-CN', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : ""; }
 
