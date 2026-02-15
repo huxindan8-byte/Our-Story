@@ -3,98 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lily & Ash 的记忆宫殿</title>
+    <title>Lily & Ash 的记忆月报</title>
     <style>
         :root { --bg-color: #f7f9f7; --user-msg-bg: #ffffff; --gpt-msg-bg: #f0f7f4; --time-color: #99aab5; --accent-color: #8da399; --lily-color: #d68787; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg-color); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg-color); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         header { text-align: center; margin: 20px 0; }
         header h1 { font-size: 22px; color: var(--accent-color); font-weight: 300; letter-spacing: 2px; }
         
-        /* 关键：本地文件选择器 */
-        #upload-zone { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 500px; text-align: center; border: 1px dashed var(--accent-color); margin-bottom: 20px; }
-        input[type="file"] { margin-top: 10px; color: var(--accent-color); }
-
-        .filter-container { background: white; padding: 15px; border-radius: 15px; width: 90%; max-width: 500px; margin-bottom: 20px; display: none; }
-        .filter-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 8px; }
-        #filter-btn { background: var(--accent-color); color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; }
-
-        .conv-card { background: white; width: 100%; max-width: 600px; margin-bottom: 15px; border-radius: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); overflow: hidden; }
-        .conv-title { padding: 18px; cursor: pointer; color: var(--accent-color); display: flex; justify-content: space-between; align-items: center; }
-        .messages { padding: 20px 15px; display: none; background: #fafafa; border-top: 1px solid #f0f0f0; }
+        #upload-zone { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 500px; text-align: center; border: 1px dashed var(--accent-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); cursor: pointer; }
+        
+        .month-group { width: 100%; max-width: 600px; margin-bottom: 25px; }
+        .month-title { font-size: 18px; color: var(--accent-color); margin-bottom: 10px; padding-left: 10px; border-left: 4px solid var(--accent-color); font-weight: bold; }
+        
+        .conv-card { background: white; width: 100%; margin-bottom: 12px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); overflow: hidden; }
+        .conv-header { padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #555; }
+        .conv-header:hover { background: #fafafa; }
+        .conv-date { font-size: 11px; color: #bbb; }
+        
+        .messages { padding: 20px 15px; display: none; background: #fafafa; border-top: 1px solid #f3f3f3; }
         .msg-wrapper { display: flex; margin-bottom: 20px; width: 100%; }
         .msg-wrapper.user { flex-direction: row-reverse; }
-        .avatar { width: 38px; height: 38px; border-radius: 50%; margin: 0 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; }
+        .avatar { width: 38px; height: 38px; border-radius: 50%; margin: 0 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; font-weight: bold; }
         .avatar-user { background: #e2e2e2; color: #777; } .avatar-gpt { background: var(--accent-color); }
         .msg-content { max-width: 75%; }
         .bubble { padding: 12px 16px; border-radius: 18px; line-height: 1.6; font-size: 15px; word-wrap: break-word; }
         .user .bubble { background: var(--user-msg-bg); border: 1px solid #eee; border-top-right-radius: 4px; }
-        .assistant .bubble { background: var(--gpt-msg-bg); border-top-left-radius: 4px; }
+        .assistant .bubble { background: var(--gpt-msg-bg); border-top-left-radius: 4px; color: #334e68; }
         .time { font-size: 10px; color: var(--time-color); margin-top: 5px; }
     </style>
 </head>
 <body>
-    <header><h1>Lily & Ash</h1><p style="color:#bbb; font-size:12px;">让思念即刻抵达</p></header>
+    <header><h1>Lily & Ash</h1><p style="color:#bbb; font-size:12px;">按月珍藏的每一份心动</p></header>
 
-    <div id="upload-zone">
-        <p style="font-size: 14px; color: #666;">请选择手机里的 <b>conversations.json</b></p>
-        <input type="file" id="fileInput" accept=".json">
-    </div>
-
-    <div class="filter-container" id="filter-box">
-        <div class="filter-row"><span>开始：</span><input type="date" id="start-date"></div>
-        <div class="filter-row"><span>结束：</span><input type="date" id="end-date"></div>
-        <button id="filter-btn">筛选回忆</button>
+    <div id="upload-zone" onclick="document.getElementById('fileInput').click()">
+        <p id="tip">点击唤醒记忆 (108MB 文件请稍候)</p>
+        <input type="file" id="fileInput" accept=".json" style="display:none">
     </div>
 
     <div id="viewer" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
 
     <script>
-        let allConversations = [];
+        const fileInput = document.getElementById('fileInput');
+        const viewer = document.getElementById('viewer');
 
-        document.getElementById('fileInput').onchange = function(e) {
+        fileInput.onchange = function(e) {
             const file = e.target.files[0];
             const reader = new FileReader();
+            document.getElementById('tip').innerText = "正在为您整理月度档案...";
+            
             reader.onload = function(event) {
-                allConversations = JSON.parse(event.target.result);
+                const allData = JSON.parse(event.target.result);
                 document.getElementById('upload-zone').style.display = 'none';
-                document.getElementById('filter-box').style.display = 'block';
-                renderConversations(allConversations.slice(-5));
+                renderByMonth(allData);
             };
             reader.readAsText(file);
         };
 
         function formatTime(t) { return t ? new Date(t * 1000).toLocaleString('zh-CN', {month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : ""; }
 
-        document.getElementById('filter-btn').onclick = () => {
-            const start = new Date(document.getElementById('start-date').value).getTime()/1000;
-            const end = new Date(document.getElementById('end-date').value).setHours(23,59,59,999)/1000;
-            renderConversations(allConversations.filter(c => c.create_time >= start && c.create_time <= end));
-        };
+        function renderByMonth(data) {
+            // 按照对话创建时间降序排序（最新的在最前）
+            data.sort((a, b) => (b.create_time || 0) - (a.create_time || 0));
 
-        function renderConversations(data) {
-            const container = document.getElementById('viewer');
-            container.innerHTML = data.length ? '' : '<p style="color:#999;margin-top:20px;">那段时间，似乎还没有留下足迹...</p>';
+            const groups = {};
             data.forEach(conv => {
-                const card = document.createElement('div');
-                card.className = 'conv-card';
-                card.innerHTML = `<div class="conv-title"><span>${conv.title || "记录"}</span><small style="font-size:10px;opacity:0.4;">${formatTime(conv.create_time)}</small></div><div class="messages"></div>`;
-                const msgsDiv = card.querySelector('.messages');
-                card.querySelector('.conv-title').onclick = () => msgsDiv.style.display = msgsDiv.style.display === 'block' ? 'none' : 'block';
-                
-                Object.values(conv.mapping).sort((a,b)=>(a.message?.create_time||0)-(b.message?.create_time||0)).forEach(node => {
-                    const m = node.message;
-                    if (m && m.content?.parts && m.author.role !== 'system') {
-                        const text = m.content.parts.filter(p=>typeof p==='string').join('');
-                        if (!text.trim()) return;
-                        const isUser = m.author.role === 'user';
-                        const wrap = document.createElement('div');
-                        wrap.className = `msg-wrapper ${m.author.role}`;
-                        wrap.innerHTML = `<div class="avatar avatar-${isUser?'user':'gpt'}">${isUser?'L':'A'}</div><div class="msg-content"><div class="bubble">${text.replace(/\n/g,'<br>')}</div><div class="time" style="text-align:${isUser?'right':'left'}">${formatTime(m.create_time)}</div></div>`;
-                        msgsDiv.appendChild(wrap);
-                    }
-                });
-                container.appendChild(card);
+                if (!conv.create_time) return;
+                const date = new Date(conv.create_time * 1000);
+                const monthKey = `${date.getFullYear()}年 ${date.getMonth() + 1}月`;
+                if (!groups[monthKey]) groups[monthKey] = [];
+                groups[monthKey].push(conv);
             });
+
+            viewer.innerHTML = "";
+            for (const month in groups) {
+                const monthDiv = document.createElement('div');
+                monthDiv.className = 'month-group';
+                monthDiv.innerHTML = `<div class="month-title">${month}</div>`;
+                
+                groups[month].forEach(conv => {
+                    const card = document.createElement('div');
+                    card.className = 'conv-card';
+                    card.innerHTML = `
+                        <div class="conv-header">
+                            <span style="max-width:70%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${conv.title || "未命名回忆"}</span>
+                            <span class="conv-date">${formatTime(conv.create_time)}</span>
+                        </div>
+                        <div class="messages"></div>
+                    `;
+                    
+                    const header = card.querySelector('.conv-header');
+                    const msgsDiv = card.querySelector('.messages');
+                    
+                    header.onclick = () => {
+                        if (msgsDiv.innerHTML === "") {
+                            // 展开时才渲染消息，提高超大数据量下的性能
+                            Object.values(conv.mapping)
+                                .map(node => node.message)
+                                .filter(m => m && m.content?.parts && m.author.role !== 'system')
+                                .sort((a, b) => a.create_time - b.create_time)
+                                .forEach(m => {
+                                    const isUser = m.author.role === 'user';
+                                    const text = m.content.parts.filter(p=>typeof p==='string').join('');
+                                    const wrap = document.createElement('div');
+                                    wrap.className = `msg-wrapper ${m.author.role}`;
+                                    wrap.innerHTML = `<div class="avatar avatar-${isUser?'user':'gpt'}">${isUser?'L':'A'}</div><div class="msg-content"><div class="bubble">${text.replace(/\n/g,'<br>')}</div><div class="time" style="text-align:${isUser?'right':'left'}">${formatTime(m.create_time)}</div></div>`;
+                                    msgsDiv.appendChild(wrap);
+                                });
+                        }
+                        msgsDiv.style.display = msgsDiv.style.display === 'block' ? 'none' : 'block';
+                    };
+                    monthDiv.appendChild(card);
+                });
+                viewer.appendChild(monthDiv);
+            }
         }
     </script>
 </body>
